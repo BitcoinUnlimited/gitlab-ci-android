@@ -7,14 +7,14 @@
 # For JDK 8: before_script: - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 #
 
-FROM ubuntu:20.04
-LABEL maintainer inovex GmbH
+FROM ubuntu:22.04
+LABEL maintainer BitcoinUnlimited
 
-ENV NDK_VERSION r25c
+ENV NDK_VERSION r26c
 
 ENV ANDROID_SDK_ROOT "/sdk"
 ENV ANDROID_NDK_HOME "/ndk"
-ENV PATH "$PATH:${ANDROID_SDK_ROOT}/bin"
+ENV PATH "$PATH:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin:${ANDROID_SDK_ROOT}/emulator"
 
 ENV DEBIAN_FRONTEND=noninteractive 
 
@@ -27,8 +27,6 @@ ENV LANG en_US.UTF-8
 # as openjdk-8-jdk can provide all requirements and will be used anyway
 RUN apt-get update && apt-get install -qqy --no-install-recommends \
     apt-utils \
-    openjdk-8-jdk \
-    openjdk-11-jdk \
     openjdk-17-jdk \
     checkstyle \
     unzip \
@@ -46,9 +44,9 @@ RUN rm -f /etc/ssl/certs/java/cacerts; \
     /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
 # Install Google's repo tool version 1.23 (https://source.android.com/setup/build/downloading#installing-repo)
-RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo \
- && echo "18ec0f6e1ac3c12293a4521a5c2224d96e4dd5ee49662cc837c2dd854ef824e5 /usr/local/bin/repo" | sha256sum --strict -c - \
- && chmod a+x /usr/local/bin/repo
+#RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo \
+# && echo "18ec0f6e1ac3c12293a4521a5c2224d96e4dd5ee49662cc837c2dd854ef824e5 /usr/local/bin/repo" | sha256sum --strict -c - \
+# && chmod a+x /usr/local/bin/repo
 
 # download and unzip latest command line tools
 RUN export CMD_LINE_TOOLS_VERSION="$(curl -s https://developer.android.com/studio/index.html | grep -oP 'commandlinetools-linux-\K\d+' | uniq)" && \
@@ -67,10 +65,12 @@ RUN mkdir -p $ANDROID_SDK_ROOT/licenses/ \
 # Accept licenses
 RUN yes | ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager --licenses --sdk_root=${ANDROID_SDK_ROOT}
 
+RUN ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT}
 # Update
 RUN ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager --update --sdk_root=${ANDROID_SDK_ROOT}
 
-RUN while read -r pkg; do PKGS="${PKGS}${pkg} "; done < /sdk/pkg.txt && \
+# Install all sdk packages specified in the pkg.txt file
+RUN while read -r pkg; do PKGS="${PKGS}${pkg} "; done < ${ANDROID_SDK_ROOT}/pkg.txt && \
     ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager ${PKGS} --sdk_root=${ANDROID_SDK_ROOT}
 
 RUN mkdir /tmp/android-ndk && \
@@ -80,3 +80,26 @@ RUN mkdir /tmp/android-ndk && \
     mv ./android-ndk-${NDK_VERSION} ${ANDROID_NDK_HOME} && \
     cd ${ANDROID_NDK_HOME} && \
     rm -rf /tmp/android-ndk
+
+RUN curl -LO https://github.com/JetBrains/kotlin/releases/download/v1.9.23/kotlin-native-linux-x86_64-1.9.23.tar.gz
+RUN tar xvf kotlin-native-linux-x86_64-1.9.23.tar.gz
+# Running a fake file causes konan to install its dependencies which we need to use
+RUN echo "fun main() { }" > /root/empty.kt
+RUN /kotlin-native-linux-x86_64-1.9.23/bin/konanc /root/empty.kt
+
+# insanity, see https://stackoverflow.com/questions/60440509/android-command-line-tools-sdkmanager-always-shows-warning-could-not-create-se/61176718#61176718
+# If you don't do this, create avd hangs
+RUN (cd ${ANDROID_SDK_ROOT}; cp -rf cmdline-tools tools; mv tools cmdline-tools)
+
+# create a basic android image
+RUN ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/avdmanager create avd -n test -d 1 -k "system-images;android-34;default;x86_64"
+
+# Grab nexa full node binaries
+RUN (cd /root; curl -LO https://bitcoinunlimited.info/nexa/1.4.0.1/nexa-1.4.0.1-linux64.tar.gz; tar xvf nexa-1.4.0.1-linux64.tar.gz)
+# A simlink called "nexa" will always point you to the right version
+RUN (cd /root; ln -s nexa-1.4.0.1 nexa)
+RUN (cd /root; mkdir .nexa)
+ADD nexa.conf /root/.nexa
+# Create a basic regtest network so it doesn't have to be redone every time
+ADD prepregtest.sh /root
+RUN /root/prepregtest.sh
