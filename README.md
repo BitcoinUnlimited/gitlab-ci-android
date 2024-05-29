@@ -8,7 +8,7 @@ Make sure caching is enabled for the CI environment to speed up builds.
 Example yml which has dependency caching enabled:
 
 ```
-image: inovex/gitlab-ci-android
+image: andrewstone/nexaadk:latest
 
 stages:
 - release
