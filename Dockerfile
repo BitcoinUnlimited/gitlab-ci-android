@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -qqy --no-install-recommends \
     git \
     python-is-python3 \
     ninja-build \
+    libboost-all-dev \
     build-essential \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
