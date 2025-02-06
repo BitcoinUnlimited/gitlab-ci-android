@@ -10,7 +10,7 @@
 FROM ubuntu:22.04
 LABEL maintainer BitcoinUnlimited
 
-ENV NDK_VERSION r26c
+ENV NDK_VERSION r27-beta2
 
 ENV ANDROID_SDK_ROOT "/sdk"
 ENV ANDROID_NDK_HOME "/ndk"
@@ -38,6 +38,7 @@ RUN apt-get update && apt-get install -qqy --no-install-recommends \
     ninja-build \
     libboost-all-dev \
     build-essential \
+    libboost-all-dev=1.74.0.3ubuntu7 \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # pre-configure some ssl certs

@@ -1,5 +1,5 @@
-build-tools;34.0.0
-platforms;android-34
+build-tools;35.0.0
+platforms;android-35
 extras;android;m2repository
 extras;google;google_play_services
 extras;google;m2repository
@@ -9,6 +9,6 @@ extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.
 platform-tools
 system-images;android-34;default;x86_64
 ndk-bundle
-ndk;26.2.11394342
+ndk;27.0.11902837
 cmake;3.22.1
 emulator
