@@ -37,6 +37,11 @@ build:
         - develop
 ```
 
+### Modifications
+
+Android packages are located in pkgs.txt
+
+
 ### JDK Settings
 The Docker image supports JDK 8 11 and 17.
 
