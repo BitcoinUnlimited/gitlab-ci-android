@@ -10,7 +10,7 @@
 FROM ubuntu:22.04
 LABEL maintainer BitcoinUnlimited
 
-ENV NDK_VERSION r27-beta2
+ENV NDK_VERSION r28
 
 ENV ANDROID_SDK_ROOT "/sdk"
 ENV ANDROID_NDK_HOME "/ndk"
@@ -83,18 +83,19 @@ RUN mkdir /tmp/android-ndk && \
     cd ${ANDROID_NDK_HOME} && \
     rm -rf /tmp/android-ndk
 
-RUN curl -LO https://github.com/JetBrains/kotlin/releases/download/v1.9.23/kotlin-native-linux-x86_64-1.9.23.tar.gz
-RUN tar xvf kotlin-native-linux-x86_64-1.9.23.tar.gz
+RUN curl -Lo kotlin.tar.gz https://github.com/JetBrains/kotlin/releases/download/v2.1.10/kotlin-native-prebuilt-linux-x86_64-2.1.10.tar.gz
+RUN tar xvf kotlin.tar.gz
+RUN mv kotlin-* kotlin
 # Running a fake file causes konan to install its dependencies which we need to use
 RUN echo "fun main() { }" > /root/empty.kt
-RUN /kotlin-native-linux-x86_64-1.9.23/bin/konanc /root/empty.kt
+RUN /kotlin/bin/konanc /root/empty.kt
 
 # insanity, see https://stackoverflow.com/questions/60440509/android-command-line-tools-sdkmanager-always-shows-warning-could-not-create-se/61176718#61176718
 # If you don't do this, create avd hangs
 RUN (cd ${ANDROID_SDK_ROOT}; cp -rf cmdline-tools tools; mv tools cmdline-tools)
 
 # create a basic android image
-RUN ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/avdmanager create avd -n test -d 1 -k "system-images;android-34;default;x86_64"
+RUN ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/avdmanager create avd -n test -d 1 -k "system-images;android-35;default;x86_64"
 
 # Grab nexa full node binaries
 RUN (cd /root; curl -LO https://bitcoinunlimited.info/nexa/1.4.0.1/nexa-1.4.0.1-linux64.tar.gz; tar xvf nexa-1.4.0.1-linux64.tar.gz)
