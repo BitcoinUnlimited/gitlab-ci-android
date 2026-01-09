@@ -1,4 +1,4 @@
-# gitlab-ci-android
+# gitlab-ci-android: Android build and test image for gitlab
 
 Contains the Android SDK, NDK and common packages necessary for building Android Apps in Gitlab CI (for example).
 Make sure caching is enabled for the CI environment to speed up builds.
@@ -8,7 +8,7 @@ Also produces the above plus nodejs for Vue/Nuxt-based client front ends.
 Example yml which has dependency caching enabled:
 
 ```
-image: inovex/gitlab-ci-android
+image: <your docker username>/gitlab-ci-android
 
 stages:
 - release
@@ -51,7 +51,6 @@ emacs ~/pkglst.txt
 Go here to find the ndkVersion to file name mapping:
 [https://developer.android.com/ndk/downloads]
 
-
 ### JDK Settings
 The Docker image supports JDK 21.
 
@@ -67,6 +66,7 @@ before_script:
 
 ```
 Gitlab CI Android
+Copyright (c) 2026 Bitcoin Unlimited
 Copyright (c) 2023 inovex GmbH (https://www.inovex.de)
 
 Licensed under the Apache License, Version 2.0 (the "License");
