@@ -1,0 +1,7 @@
+FROM andrewstone/nexaadk
+LABEL maintainer BitcoinUnlimited
+
+RUN curl -s https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-x64.tar.xz -o /nodejs.tar.xz && tar xvf \nodejs.tar.xz -C /opt && mv /opt/node* /opt/nodejs
+RUN echo 'export PATH="/opt/nodejs/bin:$PATH"' > /etc/profile.d/nodejspath.sh
+RUN echo 'export PATH="/opt/nodejs/bin:$PATH"' >> /root/.bashrc
+

@@ -10,24 +10,25 @@
 FROM ubuntu:22.04
 LABEL maintainer BitcoinUnlimited
 
-ENV NDK_VERSION r28
+ENV NDK_VERSION=r29
 
-ENV ANDROID_SDK_ROOT "/sdk"
-ENV ANDROID_NDK_HOME "/ndk"
-ENV PATH "$PATH:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin:${ANDROID_SDK_ROOT}/emulator"
+ENV ANDROID_SDK_ROOT="/sdk"
+ENV ANDROID_NDK_HOME="/ndk"
+ENV PATH="$PATH:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin:${ANDROID_SDK_ROOT}/emulator"
 
 ENV DEBIAN_FRONTEND=noninteractive 
 
 RUN apt-get -qq update && apt-get install -y locales \
 	&& localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-ENV LANG en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # install necessary packages
 # prevent installation of openjdk-11-jre-headless with a trailing minus,
 # as openjdk-8-jdk can provide all requirements and will be used anyway
-RUN apt-get update && apt-get install -qqy --no-install-recommends \
+RUN apt-get update
+
+RUN apt-get install -qqy \
     apt-utils \
-    openjdk-17-jdk \
     checkstyle \
     unzip \
     curl \
@@ -38,12 +39,12 @@ RUN apt-get update && apt-get install -qqy --no-install-recommends \
     ninja-build \
     libboost-all-dev \
     build-essential \
-    libboost-all-dev=1.74.0.3ubuntu7 \
-  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    libboost-all-dev=1.74.0.3ubuntu7
+
+RUN apt-get install -y openjdk-17-jdk openjdk-21-jdk
 
 # pre-configure some ssl certs
-RUN rm -f /etc/ssl/certs/java/cacerts; \
-    /var/lib/dpkg/info/ca-certificates-java.postinst configure
+RUN rm -f /etc/ssl/certs/java/cacerts; /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
 # Install Google's repo tool version 1.23 (https://source.android.com/setup/build/downloading#installing-repo)
 #RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo \
@@ -83,7 +84,8 @@ RUN mkdir /tmp/android-ndk && \
     cd ${ANDROID_NDK_HOME} && \
     rm -rf /tmp/android-ndk
 
-RUN curl -Lo kotlin.tar.gz https://github.com/JetBrains/kotlin/releases/download/v2.1.10/kotlin-native-prebuilt-linux-x86_64-2.1.10.tar.gz
+
+RUN curl -Lo kotlin.tar.gz https://github.com/JetBrains/kotlin/releases/download/v2.3.0/kotlin-native-prebuilt-linux-x86_64-2.3.0.tar.gz
 RUN tar xvf kotlin.tar.gz
 RUN mv kotlin-* kotlin
 # Running a fake file causes konan to install its dependencies which we need to use
@@ -95,14 +97,20 @@ RUN /kotlin/bin/konanc /root/empty.kt
 RUN (cd ${ANDROID_SDK_ROOT}; cp -rf cmdline-tools tools; mv tools cmdline-tools)
 
 # create a basic android image
-RUN ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/avdmanager create avd -n test -d 1 -k "system-images;android-35;default;x86_64"
+RUN ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/avdmanager create avd -n test -d 1 -k "system-images;android-36;default;x86_64"
 
 # Grab nexa full node binaries
-RUN (cd /root; curl -LO https://bitcoinunlimited.info/nexa/1.4.0.1/nexa-1.4.0.1-linux64.tar.gz; tar xvf nexa-1.4.0.1-linux64.tar.gz)
+RUN (cd /root; curl -LO https://bitcoinunlimited.info/nexa/2.1.0.0/nexa-2.1.0.0-linux64.tar.gz; tar xvf nexa-2.1.0.0-linux64.tar.gz)
 # A simlink called "nexa" will always point you to the right version
-RUN (cd /root; ln -s nexa-1.4.0.1 nexa)
+RUN (cd /root; ln -s nexa-2.1.0.0 nexa)
 RUN (cd /root; mkdir .nexa)
 ADD nexa.conf /root/.nexa
+
+
 # Create a basic regtest network so it doesn't have to be redone every time
 ADD prepregtest.sh /root
 RUN /root/prepregtest.sh
+
+RUN apt-get update; apt-get install -y openjdk-17-jdk
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
