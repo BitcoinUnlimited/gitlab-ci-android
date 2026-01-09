@@ -39,21 +39,27 @@ build:
 
 ### Modifications
 
-Android packages are located in pkgs.txt
+Android packages are located in pkgs.txt.
+Discover what packages to add/update with:
+
+~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --list_installed
+./sdkmanager --list > ~/pkglst.txt
+emacs ~/pkglst.txt
+
+#### Update NDK
+
+Go here to find the ndkVersion to file name mapping:
+[https://developer.android.com/ndk/downloads]
 
 
 ### JDK Settings
-The Docker image supports JDK 8 11 and 17.
+The Docker image supports JDK 21.
 
 To use the correct version within your builds, it is recommended to define `JAVA_HOME` accordingly.
 
 ```
 before_script: 
-  - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-  or
-  - export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-  or
-  - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+  - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ```
 
 
