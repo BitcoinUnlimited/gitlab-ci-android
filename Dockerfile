@@ -10,6 +10,7 @@
 FROM ubuntu:22.04
 LABEL maintainer BitcoinUnlimited
 
+# NOTE: To change the NDK version (and lots of other packages) you need to update them in pkg.txt!!!
 ENV NDK_VERSION=r29
 
 ENV ANDROID_SDK_ROOT="/sdk"
@@ -76,13 +77,17 @@ RUN ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager --update --sdk_root=${ANDRO
 RUN while read -r pkg; do PKGS="${PKGS}${pkg} "; done < ${ANDROID_SDK_ROOT}/pkg.txt && \
     ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager ${PKGS} --sdk_root=${ANDROID_SDK_ROOT}
 
-RUN mkdir /tmp/android-ndk && \
-    cd /tmp/android-ndk && \
-    curl -s -O https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip && \
-    unzip -q android-ndk-${NDK_VERSION}-linux.zip && \
-    mv ./android-ndk-${NDK_VERSION} ${ANDROID_NDK_HOME} && \
-    cd ${ANDROID_NDK_HOME} && \
-    rm -rf /tmp/android-ndk
+# This gets the ndk from google, and installs it
+#RUN mkdir /tmp/android-ndk && cd /tmp/android-ndk && \
+#    curl -s -O https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip && \
+#    unzip -q android-ndk-${NDK_VERSION}-linux.zip && \
+#    mv ./android-ndk-${NDK_VERSION} ${ANDROID_NDK_HOME} && \
+#    cd ${ANDROID_NDK_HOME} && \
+#    rm -rf /tmp/android-ndk
+
+# This gets the ndk from the local dir, and installs it
+ADD android-ndk-${NDK_VERSION}-linux.zip /tmp/ndk.zip
+RUN mkdir /tmp/android-ndk && cd /tmp/android-ndk && unzip -q /tmp/ndk.zip && mv ./android-ndk-${NDK_VERSION} ${ANDROID_NDK_HOME} && cd / && rm -rf /tmp/android-ndk
 
 
 RUN curl -Lo kotlin.tar.gz https://github.com/JetBrains/kotlin/releases/download/v2.3.0/kotlin-native-prebuilt-linux-x86_64-2.3.0.tar.gz
