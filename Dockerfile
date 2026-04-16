@@ -10,24 +10,26 @@
 FROM ubuntu:22.04
 LABEL maintainer BitcoinUnlimited
 
-ENV NDK_VERSION r26c
+# NOTE: To change the NDK version (and lots of other packages) you need to update them in pkg.txt!!!
+ENV NDK_VERSION=r29
 
-ENV ANDROID_SDK_ROOT "/sdk"
-ENV ANDROID_NDK_HOME "/ndk"
-ENV PATH "$PATH:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin:${ANDROID_SDK_ROOT}/emulator"
+ENV ANDROID_SDK_ROOT="/sdk"
+ENV ANDROID_NDK_HOME="/ndk"
+ENV PATH="$PATH:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin:${ANDROID_SDK_ROOT}/emulator"
 
 ENV DEBIAN_FRONTEND=noninteractive 
 
 RUN apt-get -qq update && apt-get install -y locales \
 	&& localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-ENV LANG en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # install necessary packages
 # prevent installation of openjdk-11-jre-headless with a trailing minus,
 # as openjdk-8-jdk can provide all requirements and will be used anyway
-RUN apt-get update && apt-get install -qqy --no-install-recommends \
+RUN apt-get update
+
+RUN apt-get install -qqy \
     apt-utils \
-    openjdk-17-jdk \
     checkstyle \
     unzip \
     curl \
@@ -36,12 +38,14 @@ RUN apt-get update && apt-get install -qqy --no-install-recommends \
     git \
     python-is-python3 \
     ninja-build \
+    libboost-all-dev \
     build-essential \
-  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    libboost-all-dev=1.74.0.3ubuntu7
+
+RUN apt-get install -y openjdk-17-jdk openjdk-21-jdk
 
 # pre-configure some ssl certs
-RUN rm -f /etc/ssl/certs/java/cacerts; \
-    /var/lib/dpkg/info/ca-certificates-java.postinst configure
+RUN rm -f /etc/ssl/certs/java/cacerts; /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
 # Install Google's repo tool version 1.23 (https://source.android.com/setup/build/downloading#installing-repo)
 #RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo \
@@ -73,33 +77,46 @@ RUN ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager --update --sdk_root=${ANDRO
 RUN while read -r pkg; do PKGS="${PKGS}${pkg} "; done < ${ANDROID_SDK_ROOT}/pkg.txt && \
     ${ANDROID_SDK_ROOT}/cmdline-tools/bin/sdkmanager ${PKGS} --sdk_root=${ANDROID_SDK_ROOT}
 
-RUN mkdir /tmp/android-ndk && \
-    cd /tmp/android-ndk && \
-    curl -s -O https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip && \
-    unzip -q android-ndk-${NDK_VERSION}-linux.zip && \
-    mv ./android-ndk-${NDK_VERSION} ${ANDROID_NDK_HOME} && \
-    cd ${ANDROID_NDK_HOME} && \
-    rm -rf /tmp/android-ndk
+# NDK is installed to /sdk/ndk/<ndk_version> by pkg.txt
+# This gets the ndk from google, and installs it
+#RUN mkdir /tmp/android-ndk && cd /tmp/android-ndk && \
+#    curl -s -O https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip && \
+#    unzip -q android-ndk-${NDK_VERSION}-linux.zip && \
+#    mv ./android-ndk-${NDK_VERSION} ${ANDROID_NDK_HOME} && \
+#    cd ${ANDROID_NDK_HOME} && \
+#    rm -rf /tmp/android-ndk
+# This gets the ndk from the local dir, and installs it
+#ADD android-ndk-${NDK_VERSION}-linux.zip /tmp/ndk.zip
+#RUN mkdir /tmp/android-ndk && cd /tmp/android-ndk && unzip -q /tmp/ndk.zip && mv ./android-ndk-${NDK_VERSION} ${ANDROID_NDK_HOME} && cd / && rm -rf /tmp/android-ndk
 
-RUN curl -LO https://github.com/JetBrains/kotlin/releases/download/v1.9.23/kotlin-native-linux-x86_64-1.9.23.tar.gz
-RUN tar xvf kotlin-native-linux-x86_64-1.9.23.tar.gz
+# We only installed 1 ndk so * will find only 1 thing
+RUN ln -s /sdk/ndk/* /ndk
+
+RUN curl -Lo kotlin.tar.gz https://github.com/JetBrains/kotlin/releases/download/v2.3.0/kotlin-native-prebuilt-linux-x86_64-2.3.0.tar.gz
+RUN tar xvf kotlin.tar.gz
+RUN mv kotlin-* kotlin
 # Running a fake file causes konan to install its dependencies which we need to use
 RUN echo "fun main() { }" > /root/empty.kt
-RUN /kotlin-native-linux-x86_64-1.9.23/bin/konanc /root/empty.kt
+RUN /kotlin/bin/konanc /root/empty.kt
 
 # insanity, see https://stackoverflow.com/questions/60440509/android-command-line-tools-sdkmanager-always-shows-warning-could-not-create-se/61176718#61176718
 # If you don't do this, create avd hangs
 RUN (cd ${ANDROID_SDK_ROOT}; cp -rf cmdline-tools tools; mv tools cmdline-tools)
 
 # create a basic android image
-RUN ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/avdmanager create avd -n test -d 1 -k "system-images;android-34;default;x86_64"
+RUN ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/avdmanager create avd -n test -d 1 -k "system-images;android-36;default;x86_64"
 
 # Grab nexa full node binaries
-RUN (cd /root; curl -LO https://bitcoinunlimited.info/nexa/1.4.0.1/nexa-1.4.0.1-linux64.tar.gz; tar xvf nexa-1.4.0.1-linux64.tar.gz)
+RUN (cd /root; curl -LO https://bitcoinunlimited.info/nexa/2.1.0.0/nexa-2.1.0.0-linux64.tar.gz; tar xvf nexa-2.1.0.0-linux64.tar.gz)
 # A simlink called "nexa" will always point you to the right version
-RUN (cd /root; ln -s nexa-1.4.0.1 nexa)
+RUN (cd /root; ln -s nexa-2.1.0.0 nexa)
 RUN (cd /root; mkdir .nexa)
 ADD nexa.conf /root/.nexa
+
+
 # Create a basic regtest network so it doesn't have to be redone every time
 ADD prepregtest.sh /root
 RUN /root/prepregtest.sh
+
+RUN apt-get update; apt-get install -y openjdk-17-jdk
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
