@@ -8,7 +8,7 @@ Also produces the above plus nodejs for Vue/Nuxt-based client front ends.
 Example yml which has dependency caching enabled:
 
 ```
-image: <your docker username>/gitlab-ci-android
+image: andrewstone/nexaadk:latest
 
 stages:
 - release
