@@ -2,7 +2,7 @@
 echo "1"
 /root/nexa/bin/nexad -daemon
 echo "2"
-sleep 60
+sleep 20
 echo "3"
 /root/nexa/bin/nexa-cli getinfo
 echo "4"

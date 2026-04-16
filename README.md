@@ -1,14 +1,16 @@
-# gitlab-ci-android
+# gitlab-ci-android: Android build and test image for gitlab
 
 https://hub.docker.com/r/andrewstone/nexaadk/
 
 Contains the Android SDK, NDK and common packages necessary for building Android Apps in Gitlab CI (for example).
 Make sure caching is enabled for the CI environment to speed up builds.
 
+Also produces the above plus nodejs for Vue/Nuxt-based client front ends.
+
 Example yml which has dependency caching enabled:
 
 ```
-image: inovex/gitlab-ci-android
+image: <your docker username>/gitlab-ci-android
 
 stages:
 - release
@@ -37,18 +39,28 @@ build:
         - develop
 ```
 
+### Modifications
+
+Android packages are located in pkgs.txt.
+Discover what packages to add/update with:
+
+~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --list_installed
+./sdkmanager --list > ~/pkglst.txt
+emacs ~/pkglst.txt
+
+#### Update NDK
+
+Go here to find the ndkVersion to file name mapping:
+[https://developer.android.com/ndk/downloads]
+
 ### JDK Settings
-The Docker image supports JDK 8 11 and 17.
+The Docker image supports JDK 21.
 
 To use the correct version within your builds, it is recommended to define `JAVA_HOME` accordingly.
 
 ```
 before_script: 
-  - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-  or
-  - export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-  or
-  - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+  - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ```
 
 
@@ -56,6 +68,7 @@ before_script:
 
 ```
 Gitlab CI Android
+Copyright (c) 2026 Bitcoin Unlimited
 Copyright (c) 2023 inovex GmbH (https://www.inovex.de)
 
 Licensed under the Apache License, Version 2.0 (the "License");
