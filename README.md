@@ -1,5 +1,7 @@
 # gitlab-ci-android: Android build and test image for gitlab
 
+https://hub.docker.com/r/andrewstone/nexaadk/
+
 Contains the Android SDK, NDK and common packages necessary for building Android Apps in Gitlab CI (for example).
 Make sure caching is enabled for the CI environment to speed up builds.
 
